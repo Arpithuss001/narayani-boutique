@@ -218,28 +218,6 @@ const handleRazorpayPayment = async () => {
   }
 }
 
-    const customer = {
-      ...form,
-      whatsapp: form.whatsapp.trim() || form.mobile.trim(),
-    }
-
-    const order = addOrder({
-      customer,
-      items,
-      subtotal,
-      deliveryCharge,
-      total,
-    })
-
-    decrementStock(items)
-
-    const url = getWhatsAppOrderUrl({ customer, items, subtotal, deliveryCharge, total })
-    window.open(url, '_blank', 'noopener,noreferrer')
-
-    clearCart()
-    showToast(`Order ${order.id} placed! Complete it on WhatsApp.`, 'success')
-    navigate('/')
-  }
 
   const fields = [
     { name: 'fullName', label: 'Full Name', type: 'text', required: true, span: 2 },
