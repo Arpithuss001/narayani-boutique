@@ -5,7 +5,7 @@
 
 // Your WhatsApp Business number (country code + number, NO + sign, NO spaces)
 // Example: for +91 98765 43210 use "919876543210"
-export const WHATSAPP_NUMBER = '93544 28370'
+export const WHATSAPP_NUMBER = '9354428370'
 
 // Admin login credentials (change these before going live!)
 export const ADMIN_CREDENTIALS = {
