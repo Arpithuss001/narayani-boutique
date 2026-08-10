@@ -35,7 +35,7 @@ const reviews = [
 
 export default function Home() {
   const { products } = useProducts()
-  const featured = products.filter((p) => p.featured).slice(0, 8)
+  const featured = products.slice(0, 8)
 
   return (
     <div>
