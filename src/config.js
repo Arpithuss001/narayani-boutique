@@ -14,14 +14,14 @@ export const ADMIN_CREDENTIALS = {
 }
 
 // Delivery pricing rules
-export const DELIVERY_CHARGE = 50
+export const DELIVERY_CHARGE = 169
 export const FREE_DELIVERY_THRESHOLD = 999
 
 // Store social links (shown in footer)
 export const STORE_INFO = {
   name: 'Narayani Boutique',
   tagline: 'Celebrate the Bond of Love',
-  instagram: 'https://instagram.com/narayaniboutique',
+  instagram: 'https://www.instagram.com/narayani_boutiqueeeee?igsh=d2hsdjUwMmE5Njg0',
   email: 'hello@narayaniboutique.com',
   address: 'Greater Noida, Uttar Pradesh, India',
 }
