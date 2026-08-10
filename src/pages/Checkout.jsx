@@ -69,11 +69,154 @@ export default function Checkout() {
     return Object.keys(errs).length === 0
   }
 
-  const handlePlaceOrder = () => {
-    if (!validate()) {
-      showToast('Please fill in all required fields correctly', 'error')
-      return
+  const handleWhatsAppOrder = () => {
+  if (!validate()) {
+    showToast('Please fill in all required fields correctly', 'error')
+    return
+  }
+
+  const customer = {
+    ...form,
+    whatsapp: form.whatsapp.trim() || form.mobile.trim(),
+  }
+
+  const order = addOrder({
+    customer,
+    items,
+    subtotal,
+    deliveryCharge,
+    total,
+  })
+
+  decrementStock(items)
+
+  const url = getWhatsAppOrderUrl({
+    customer,
+    items,
+    subtotal,
+    deliveryCharge,
+    total,
+  })
+
+  window.open(url, '_blank', 'noopener,noreferrer')
+
+  clearCart()
+  showToast(`Order ${order.id} placed! Complete it on WhatsApp.`, 'success')
+  navigate('/')
+}
+
+const handleRazorpayPayment = async () => {
+  if (!validate()) {
+    showToast('Please fill in all required fields correctly', 'error')
+    return
+  }
+
+  try {
+    const scriptLoaded = await new Promise((resolve, reject) => {
+      if (window.Razorpay) {
+        resolve(true)
+        return
+      }
+
+      const script = document.createElement('script')
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js'
+      script.onload = () => resolve(true)
+      script.onerror = () => reject(new Error('Razorpay failed to load'))
+      document.body.appendChild(script)
+    })
+
+    if (!scriptLoaded) {
+      throw new Error('Razorpay could not be loaded')
     }
+
+    const response = await fetch('/api/create-order', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        amount: total,
+      }),
+    })
+
+    const orderData = await response.json()
+
+    if (!response.ok) {
+      throw new Error(orderData.error || 'Could not create payment order')
+    }
+
+    const options = {
+      key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+      amount: orderData.amount,
+      currency: orderData.currency,
+      name: 'Narayani Boutique',
+      description: 'Rakhi Order',
+      order_id: orderData.orderId,
+
+      prefill: {
+        name: form.fullName,
+        email: form.email,
+        contact: form.mobile,
+      },
+
+      notes: {
+        address: `${form.house}, ${form.area}, ${form.city}, ${form.state} - ${form.pincode}`,
+      },
+
+      theme: {
+        color: '#7A1F2B',
+      },
+
+      handler: function (paymentResponse) {
+        const customer = {
+          ...form,
+          whatsapp: form.whatsapp.trim() || form.mobile.trim(),
+        }
+
+        const order = addOrder({
+          customer,
+          items,
+          subtotal,
+          deliveryCharge,
+          total,
+          paymentId: paymentResponse.razorpay_payment_id,
+          razorpayOrderId: paymentResponse.razorpay_order_id,
+          paymentStatus: 'paid',
+        })
+
+        decrementStock(items)
+
+        showToast(
+          `Payment successful! Order ${order.id} confirmed.`,
+          'success'
+        )
+
+        clearCart()
+        navigate('/')
+      },
+
+      modal: {
+        ondismiss: function () {
+          showToast('Payment cancelled.', 'error')
+        },
+      },
+    }
+
+    const razorpay = new window.Razorpay(options)
+
+    razorpay.on('payment.failed', function () {
+      showToast('Payment failed. Please try again.', 'error')
+    })
+
+    razorpay.open()
+  } catch (error) {
+    console.error(error)
+    showToast(
+      error.message || 'Unable to start payment. Please try again.',
+      'error'
+    )
+  }
+}
 
     const customer = {
       ...form,
@@ -184,8 +327,16 @@ export default function Checkout() {
             </div>
           </div>
 
+
           <button
-            onClick={handlePlaceOrder}
+  onClick={handleRazorpayPayment}
+  className="w-full mt-6 inline-flex items-center justify-center gap-2 bg-maroon hover:bg-maroon-dark text-ivory px-6 py-3.5 rounded-full font-semibold shadow-card transition-colors"
+>
+  💳 Pay Online with Razorpay
+</button>
+
+          <button
+            onClick={handleWhatsAppOrder}
             className="w-full mt-6 inline-flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-ivory px-6 py-3.5 rounded-full font-semibold shadow-card transition-colors"
           >
             <MessageCircle size={19} /> Place Order on WhatsApp
