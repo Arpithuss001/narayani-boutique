@@ -1,0 +1,68 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  @apply bg-cream text-ink font-body;
+}
+
+h1, h2, h3, h4 {
+  font-family: '"Cormorant Garamond"', serif;
+}
+
+::selection {
+  background-color: #C99B3E;
+  color: #FFFCF6;
+}
+
+/* Gold divider used between sections */
+.gold-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #C99B3E, transparent);
+}
+
+/* Thread/tassel corner motif for cards */
+.thread-corner::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  right: 18px;
+  width: 2px;
+  height: 22px;
+  background: #C99B3E;
+  border-radius: 2px;
+  transform-origin: top center;
+  animation: sway 4s ease-in-out infinite;
+}
+
+.shimmer-badge {
+  background: linear-gradient(110deg, #6E1423 40%, #C99B3E 50%, #6E1423 60%);
+  background-size: 200% 100%;
+  animation: shimmer 3s linear infinite;
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* focus visibility for accessibility */
+a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: 2px solid #C99B3E;
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
