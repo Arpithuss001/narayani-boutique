@@ -9,8 +9,8 @@ export const WHATSAPP_NUMBER = '9170177507'
 
 // Admin login credentials (change these before going live!)
 export const ADMIN_CREDENTIALS = {
-  username: 'admin',
-  password: 'admin123',
+  username: 'arpithuss',
+  password: 'cherryjalan',
 }
 
 // Delivery pricing rules
