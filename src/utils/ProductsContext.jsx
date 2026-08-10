@@ -1,48 +1,89 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
+import { db } from '../firebase'
+import { collection, onSnapshot, doc, setDoc, deleteDoc, updateDoc, getDoc, writeBatch } from 'firebase/firestore'
 import { initialProducts } from '../data/products.js'
-import { loadFromStorage, saveToStorage, STORAGE_KEYS } from './storage.js'
 
 const ProductsContext = createContext(null)
 
 export function ProductsProvider({ children }) {
-  const [products, setProducts] = useState(() =>
-    loadFromStorage(STORAGE_KEYS.PRODUCTS, initialProducts)
-  )
+  const [products, setProducts] = useState([])
 
   useEffect(() => {
-    saveToStorage(STORAGE_KEYS.PRODUCTS, products)
-  }, [products])
+    const unsubscribe = onSnapshot(collection(db, 'products'), (snapshot) => {
+      if (snapshot.empty) {
+        // Automatically populate with initialProducts if database is empty
+        resetToSampleData()
+      } else {
+        const productsData = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }))
+        setProducts(productsData)
+      }
+    }, (error) => {
+      console.error("Error fetching products:", error)
+    })
+    
+    return () => unsubscribe()
+  }, [])
 
-  const addProduct = (product) => {
-    const newProduct = {
-      ...product,
-      id: 'p' + Date.now(),
+  const addProduct = async (product) => {
+    try {
+      const id = 'p' + Date.now()
+      const newProduct = { ...product, id }
+      await setDoc(doc(db, 'products', id), newProduct)
+      return newProduct
+    } catch (error) {
+      console.error("Error adding product:", error)
     }
-    setProducts((prev) => [newProduct, ...prev])
-    return newProduct
   }
 
-  const updateProduct = (id, updates) => {
-    setProducts((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, ...updates } : p))
-    )
+  const updateProduct = async (id, updates) => {
+    try {
+      const productRef = doc(db, 'products', id)
+      await updateDoc(productRef, updates)
+    } catch (error) {
+      console.error("Error updating product:", error)
+    }
   }
 
-  const deleteProduct = (id) => {
-    setProducts((prev) => prev.filter((p) => p.id !== id))
+  const deleteProduct = async (id) => {
+    try {
+      await deleteDoc(doc(db, 'products', id))
+    } catch (error) {
+      console.error("Error deleting product:", error)
+    }
   }
 
-  const decrementStock = (items) => {
-    setProducts((prev) =>
-      prev.map((p) => {
-        const item = items.find((i) => i.id === p.id)
-        if (!item) return p
-        return { ...p, stock: Math.max(0, p.stock - item.quantity) }
+  const decrementStock = async (items) => {
+    try {
+      const batch = writeBatch(db)
+      items.forEach(item => {
+        const productRef = doc(db, 'products', item.id)
+        const currentProduct = products.find(p => p.id === item.id)
+        if (currentProduct) {
+          const newStock = Math.max(0, currentProduct.stock - item.quantity)
+          batch.update(productRef, { stock: newStock })
+        }
       })
-    )
+      await batch.commit()
+    } catch (error) {
+      console.error("Error decrementing stock:", error)
+    }
   }
 
-  const resetToSampleData = () => setProducts(initialProducts)
+  const resetToSampleData = async () => {
+    try {
+      const batch = writeBatch(db)
+      initialProducts.forEach(product => {
+        const productRef = doc(db, 'products', product.id)
+        batch.set(productRef, product)
+      })
+      await batch.commit()
+    } catch (error) {
+      console.error("Error resetting sample data:", error)
+    }
+  }
 
   return (
     <ProductsContext.Provider

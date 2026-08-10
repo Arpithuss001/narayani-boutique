@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
-import { loadFromStorage, saveToStorage, STORAGE_KEYS } from './storage.js'
+import { db } from '../firebase'
+import { collection, onSnapshot, addDoc, updateDoc, doc, query, orderBy } from 'firebase/firestore'
 
 const OrdersContext = createContext(null)
 
@@ -13,25 +14,45 @@ export const ORDER_STATUSES = [
 ]
 
 export function OrdersProvider({ children }) {
-  const [orders, setOrders] = useState(() => loadFromStorage(STORAGE_KEYS.ORDERS, []))
+  const [orders, setOrders] = useState([])
 
   useEffect(() => {
-    saveToStorage(STORAGE_KEYS.ORDERS, orders)
-  }, [orders])
+    const q = query(collection(db, 'orders'), orderBy('date', 'desc'))
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const ordersData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }))
+      setOrders(ordersData)
+    }, (error) => {
+      console.error("Error fetching orders:", error)
+    })
+    
+    return () => unsubscribe()
+  }, [])
 
-  const addOrder = (order) => {
-    const newOrder = {
-      ...order,
-      id: 'NB' + Date.now().toString().slice(-8),
-      date: new Date().toISOString(),
-      status: 'New',
+  const addOrder = async (order) => {
+    try {
+      const newOrder = {
+        ...order,
+        date: new Date().toISOString(),
+        status: 'New',
+      }
+      await addDoc(collection(db, 'orders'), newOrder)
+      return newOrder
+    } catch (error) {
+      console.error("Error adding order:", error)
+      throw error
     }
-    setOrders((prev) => [newOrder, ...prev])
-    return newOrder
   }
 
-  const updateOrderStatus = (id, status) => {
-    setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, status } : o)))
+  const updateOrderStatus = async (id, status) => {
+    try {
+      const orderRef = doc(db, 'orders', id)
+      await updateDoc(orderRef, { status })
+    } catch (error) {
+      console.error("Error updating order status:", error)
+    }
   }
 
   return (
